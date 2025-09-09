@@ -12,6 +12,10 @@ class UserCreatePhone(BaseModel):
 class UserLogin(BaseModel):
     email: EmailStr
     password: str
+    
+class UserLoginPhone(BaseModel):
+    phone: str = Field(..., pattern=r"^\+[1-9]\d{1,14}$")
+    password: str
 
 # Responses (spec minta string kosong ketika tidak ada)
 class UserOut(BaseModel):

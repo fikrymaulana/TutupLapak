@@ -50,6 +50,14 @@ def authenticate_user(db: Session, user_data: schemas.UserLogin):
         return None
     return user
 
+def authenticate_user_by_phone(db: Session, phone: str, password: str):
+    user = get_user_by_phone(db, phone=phone)
+    if not user:
+        return None
+    if not verify_password(password, user.password_hash):
+        return None
+    return user
+
 # Opsi B (alternatif): jika mau dukung phone
 # def authenticate_user(db: Session, email: str | None = None, phone: str | None = None, password: str = ""):
 #     user = get_user_by_email(db, email) if email else get_user_by_phone(db, phone) if phone else None
