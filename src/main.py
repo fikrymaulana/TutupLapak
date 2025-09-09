@@ -1,16 +1,15 @@
 from fastapi import FastAPI
+from src.auth.router import router as auth_router
 
-app = FastAPI(title="TutupLapak", version="1.0.0")
+app = FastAPI(
+    title="TutupLapak API",
+    version="1.0.0",
+    description="TutupLapak API - Authentication, Users, Files service"
+)
 
-# TODO: Add feature routers here
-# from .auth.router import auth_router
-# from .users.router import users_router
-# from .files.router import files_router
-
-# app.include_router(auth_router, prefix="/auth", tags=["Authentication"])
-# app.include_router(users_router, prefix="/users", tags=["Users"])
-# app.include_router(files_router, prefix="/files", tags=["Files"])
+# Global versioning di sini
+app.include_router(auth_router, prefix="/v1")
 
 @app.get("/")
 def read_root():
-    return {"message": "Welcome to TutupLapak"}
+    return {"message": "Welcome to TutupLapak API!"}
