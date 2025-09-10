@@ -29,6 +29,16 @@ class User(Base):
 
     password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
 
+    # Placeholder untuk file_id (nanti dihubungkan ke tabel files)
+    file_id: Mapped[Optional[str]] = mapped_column(
+        String(255), nullable=True, index=True
+    )
+
+    # ✅ Tambahkan kolom bank account di dalam class
+    bank_account_name: Mapped[Optional[str]] = mapped_column(String(32), nullable=True)
+    bank_account_holder: Mapped[Optional[str]] = mapped_column(String(32), nullable=True)
+    bank_account_number: Mapped[Optional[str]] = mapped_column(String(32), nullable=True)
+
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
