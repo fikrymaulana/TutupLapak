@@ -5,4 +5,9 @@ passlib[bcrypt]
 python-multipart
 sqlalchemy
 asyncpg
+psycopg2-binary
 alembic
+minio
+python-dotenv
+pillow
+cuid2
