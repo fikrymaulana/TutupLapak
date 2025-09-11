@@ -1,24 +1,27 @@
-from pydantic import BaseModel, constr, Field, EmailStr
+from pydantic import BaseModel, Field
+from typing import Optional
 
 class UpdateProfileRequest(BaseModel):
-    fileId: str | None = None
-    bankAccountName: constr(min_length=4, max_length=32)
-    bankAccountHolder: constr(min_length=4, max_length=32)
-    bankAccountNumber: constr(min_length=4, max_length=32)
+    fileId: Optional[str] = Field(default=None)
+    bankAccountName: Optional[str] = ""
+    bankAccountHolder: Optional[str] = ""
+    bankAccountNumber: Optional[str] = ""
+
+class LinkPhoneRequest(BaseModel):
+    phone: str = Field(..., pattern=r"^\+[1-9]\d{1,14}$")
+
+class LinkEmailRequest(BaseModel):
+    email: str
 
 class UserProfileResponse(BaseModel):
     email: str = ""
     phone: str = ""
     fileId: str = ""
-    fileUri: str = ""            # placeholder
-    fileThumbnailUri: str = ""   # placeholder
+    fileUri: str = ""
+    fileThumbnailUri: str = ""
     bankAccountName: str = ""
     bankAccountHolder: str = ""
     bankAccountNumber: str = ""
-    
-class LinkPhoneRequest(BaseModel):
-    phone: str = Field(..., pattern=r"^\+[1-9]\d{1,14}$")
 
-
-class LinkEmailRequest(BaseModel):
-    email: EmailStr
+    class Config:
+        from_attributes = True
