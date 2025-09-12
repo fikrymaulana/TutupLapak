@@ -9,7 +9,6 @@ from .exceptions import ServerError
 from .models import FileObject
 from .utils import (
     generate_cuid,
-    normalize_mime,
     ensure_allowed_mime,
     read_limited,
     detect_image_format,
@@ -41,9 +40,6 @@ def upload_file_and_thumbnail(
     file_bytes = read_limited(upload_file, s.MAX_FILE_BYTES)
 
     # 2) validate mime by header (optional) and by content
-    header_mime = normalize_mime(upload_file.content_type)
-    if header_mime:
-        ensure_allowed_mime(header_mime)
     _, detected_mime = detect_image_format(file_bytes)
     ensure_allowed_mime(detected_mime)
 

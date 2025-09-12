@@ -29,4 +29,4 @@ class Settings:
     THUMB_MAX_WIDTH: int = int(os.getenv("THUMB_MAX_WIDTH", "320"))
     THUMB_MAX_HEIGHT: int = int(os.getenv("THUMB_MAX_HEIGHT", "320"))
 
-    APP_NAME: str = os.getenv("APP_NAME", "UploadAPI")
+    APP_NAME: str = os.getenv("APP_NAME", "TutupLapak")

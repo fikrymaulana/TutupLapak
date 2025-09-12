@@ -53,22 +53,15 @@ def read_limited(upload_file, max_bytes: int) -> bytes:
 
 def detect_image_format(image_bytes: bytes) -> Tuple[str, str]:
     try:
-        im = cast(PILImage, Image.open(BytesIO(image_bytes)))
-        if im is None:
-            raise BadRequestError("Invalid or corrupted image")
-        try:
-            pil_format = im.format  # "JPEG" / "PNG" / etc
-            if pil_format == "JPEG":
+        with Image.open(BytesIO(image_bytes)) as im:
+            pil_format = (im.format or "").upper()  # "JPEG"/"JPG"/"PNG"/""
+            if pil_format in ("JPEG", "JPG"):
+                pil_format = "JPEG"  # normalisasi
                 mime = "image/jpeg"
             elif pil_format == "PNG":
                 mime = "image/png"
             else:
                 raise BadRequestError("Only jpeg/jpg/png are allowed")
-        finally:
-            try:
-                im.close()
-            except Exception:
-                pass
     except BadRequestError:
         raise
     except Exception:
