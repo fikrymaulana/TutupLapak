@@ -6,3 +6,8 @@ python-multipart
 sqlalchemy
 asyncpg
 alembic
+cuid2
+psycopg2-binary
+pydantic-settings
+PyJWT
+pydantic[email]
