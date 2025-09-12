@@ -16,6 +16,9 @@ load_dotenv(os.path.join(BASE_DIR, ".env"))
 # --- Import Base & models (agar terdaftar ke Base.metadata) -------------------
 from src.database import Base
 from src.auth import models as auth_models  # noqa: F401
+
+from src.users import models as user_models  # noqa: F401   <-- add this line
+
 # Jika ada model lain, import juga (biarkan tak terpakai; penting untuk discovery):
 # from src.users import models as users_models  # noqa: F401
 # from src.files import models as files_models  # noqa: F401
