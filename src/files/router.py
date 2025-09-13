@@ -1,34 +1,16 @@
 from fastapi import APIRouter, UploadFile, File, Depends, HTTPException
 from sqlalchemy.orm import Session
 from minio import Minio
-from urllib.parse import urlparse
-import pydantic as pyd
-from pydantic import AnyUrl
 
-from .dependencies import get_db, get_minio_client, get_settings
+from src.auth.dependencies import get_current_user
+from .dependencies import get_minio_client, get_settings
+from src.database import get_db
 from .schemas import FileUploadResponse
 from .service import upload_file_and_thumbnail
 from .exceptions import BadRequestError, ServerError
+from .utils import _validate_url
 
 router = APIRouter(prefix="/v1", tags=["file"])
-
-
-def _is_valid_url_by_stdlib(u: str) -> bool:
-    p = urlparse(u)
-    return p.scheme in ("http", "https") and bool(p.netloc)
-
-
-def _validate_url(u: str) -> None:
-    type_adapter = getattr(pyd, "TypeAdapter", None)
-    if type_adapter is not None:
-        try:
-            type_adapter(AnyUrl).validate_python(u)
-            return
-        except Exception as e:
-            raise ValueError("Invalid URL (pydantic validation failed)") from e
-
-    if not _is_valid_url_by_stdlib(u):
-        raise ValueError("Invalid URL (basic parsing failed)")
 
 
 @router.post("/file", response_model=FileUploadResponse, status_code=200)
@@ -37,6 +19,7 @@ async def upload_file_endpoint(
     db: Session = Depends(get_db),
     minio_client: Minio = Depends(get_minio_client),
     settings=Depends(get_settings),
+    current_user=Depends(get_current_user),
 ):
     try:
         file_id, file_url, thumb_url = upload_file_and_thumbnail(

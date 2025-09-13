@@ -3,6 +3,9 @@ from io import BytesIO
 from typing import Tuple, List, cast
 from PIL import Image, ImageOps
 from PIL.Image import Image as PILImage
+from urllib.parse import urlparse
+import pydantic as pyd
+from pydantic import AnyUrl
 
 from .exceptions import BadRequestError
 from .constants import ALLOWED_MIME
@@ -117,3 +120,21 @@ def make_thumbnail_jpeg_under_limit(
         raise
     except Exception as e:
         raise BadRequestError("Failed to process image") from e
+
+
+def _is_valid_url_by_stdlib(u: str) -> bool:
+    p = urlparse(u)
+    return p.scheme in ("http", "https") and bool(p.netloc)
+
+
+def _validate_url(u: str) -> None:
+    type_adapter = getattr(pyd, "TypeAdapter", None)
+    if type_adapter is not None:
+        try:
+            type_adapter(AnyUrl).validate_python(u)
+            return
+        except Exception as e:
+            raise ValueError("Invalid URL (pydantic validation failed)") from e
+
+    if not _is_valid_url_by_stdlib(u):
+        raise ValueError("Invalid URL (basic parsing failed)")
