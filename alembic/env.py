@@ -1,4 +1,3 @@
-# alembic/env.py
 import os
 import sys
 from logging.config import fileConfig
@@ -11,14 +10,14 @@ BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 sys.path.append(BASE_DIR)
 
 from dotenv import load_dotenv
+
 load_dotenv(os.path.join(BASE_DIR, ".env"))
 
 # --- Import Base & models (agar terdaftar ke Base.metadata) -------------------
 from src.database import Base
 from src.auth import models as auth_models  # noqa: F401
-# Jika ada model lain, import juga (biarkan tak terpakai; penting untuk discovery):
-# from src.users import models as users_models  # noqa: F401
-# from src.files import models as files_models  # noqa: F401
+from src.users import models as users_models  # noqa: F401
+from src.files import models as files_models  # noqa: F401
 
 # --- Alembic config ------------------------------------------------------------
 config = context.config
@@ -36,6 +35,7 @@ if not DATABASE_URL:
     )
 # print(f"DEBUG Alembic DATABASE_URL: {DATABASE_URL}")  # optional
 
+
 def run_migrations_offline() -> None:
     """Run migrations in 'offline' mode."""
     context.configure(
@@ -46,6 +46,7 @@ def run_migrations_offline() -> None:
     )
     with context.begin_transaction():
         context.run_migrations()
+
 
 def run_migrations_online() -> None:
     """Run migrations in 'online' mode."""
@@ -58,6 +59,7 @@ def run_migrations_online() -> None:
         context.configure(connection=connection, target_metadata=target_metadata)
         with context.begin_transaction():
             context.run_migrations()
+
 
 if context.is_offline_mode():
     run_migrations_offline()

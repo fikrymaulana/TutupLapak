@@ -9,9 +9,11 @@ from .schemas import FileUploadResponse
 from .service import upload_file_and_thumbnail
 from .exceptions import BadRequestError, ServerError
 from .utils import _validate_url
+
 # tommy tambah import
 from src.users import service as users_service  # NEW
 from src.files.models import FileObject         # NEW  (perlu untuk resolve id internal)
+
 
 router = APIRouter(prefix="/v1", tags=["file"])
 
@@ -25,8 +27,10 @@ async def upload_file_endpoint(
     current_user=Depends(get_current_user),
 ):
     try:
+
         # NOTE: fungsi ini ternyata return PUBLIC id (files."fileId"), bukan internal id (files.id)
         file_id_public, file_url, thumb_url = upload_file_and_thumbnail(  # tommy: rename supaya jelas
+
             file, db, minio_client, settings
         )
 
@@ -57,6 +61,7 @@ async def upload_file_endpoint(
             fileUri=file_url,
             fileThumbnailUri=thumb_url,
         )
+
 
     except BadRequestError as e:
         raise HTTPException(status_code=400, detail=str(e))

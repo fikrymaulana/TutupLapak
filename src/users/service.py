@@ -1,3 +1,4 @@
+
 # src/users/service.py
 from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
@@ -54,6 +55,7 @@ def _to_response(user: auth_models.User, prof: user_models.Profile | None, db: S
 
 
 # ---------- core services ----------
+
 def get_or_create_profile(db: Session, user_id: str) -> user_models.Profile:
     prof = db.query(user_models.Profile).filter(user_models.Profile.user_id == user_id).first()
     if prof:
@@ -82,15 +84,20 @@ def update_profile(
     prof = get_or_create_profile(db, user.id)
 
     # normalize
+
     prof.file_id = (file_id or "").strip() or None
     prof.bank_account_name = bank_name or ""
     prof.bank_account_holder = bank_holder or ""
     prof.bank_account_number = bank_number or ""
 
+
+
     db.add(prof)
     db.commit()
     db.refresh(prof)
     return prof
+
+
 
 
 def link_phone(user: auth_models.User, phone: str, db: Session):
@@ -104,6 +111,7 @@ def link_phone(user: auth_models.User, phone: str, db: Session):
     return user
 
 
+
 def link_email(user: auth_models.User, email: str, db: Session):
     existing = db.query(auth_models.User).filter(auth_models.User.email == email).first()
     if existing and existing.id != user.id:
@@ -113,6 +121,7 @@ def link_email(user: auth_models.User, email: str, db: Session):
     db.commit()
     db.refresh(user)
     return user
+
 
 def set_profile_file_id(
     db: Session,
@@ -132,3 +141,4 @@ def set_profile_file_id(
 
     db.add(prof)
     return prof
+

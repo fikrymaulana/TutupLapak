@@ -1,9 +1,13 @@
+
 from fastapi import APIRouter, Depends, status, HTTPException
+
 from sqlalchemy.orm import Session
 from src.database import get_db
 from src.auth.dependencies import get_current_user
 from src.auth.models import User
+
 from src.files.models import FileObject  # <- model files (kolom: fileId, fileUri, fileThumbnailUri)
+
 from .schemas import UpdateProfileRequest, UserProfileResponse, LinkPhoneRequest, LinkEmailRequest
 from . import service
 
@@ -53,10 +57,12 @@ def get_profile(
         "fileId": file_public_id,          # <- dari tabel files (public id)
         "fileUri": file_uri,               # <- dari tabel files
         "fileThumbnailUri": file_thumb,    # <- dari tabel files
+
         "bankAccountName": prof.bank_account_name or "",
         "bankAccountHolder": prof.bank_account_holder or "",
         "bankAccountNumber": prof.bank_account_number or "",
     }
+
     
 
 # @router.put("/user", response_model=UserProfileResponse)
@@ -89,6 +95,7 @@ def update_profile(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+
     # --- tommy NEW: ambil profil dulu (buat kalau belum ada) ---
     current_prof = service.get_or_create_profile(db, current_user.id)
 
@@ -114,10 +121,12 @@ def update_profile(
     prof = service.update_profile(
         db, current_user,
         file_id=resolved_internal_id,                 # <- simpan INTERNAL id (UUID) ke profiles.file_id
+
         bank_name=body.bankAccountName,
         bank_holder=body.bankAccountHolder,
         bank_number=body.bankAccountNumber,
     )
+
 
     # --- tommy NEW: bangun response ambil dari tabel files, bukan dari prof langsung ---
     file_public_id = ""
@@ -136,6 +145,7 @@ def update_profile(
         "fileId": file_public_id,       # kirim PUBLIC id ke FE
         "fileUri": file_uri,
         "fileThumbnailUri": file_thumb,
+
         "bankAccountName": prof.bank_account_name or "",
         "bankAccountHolder": prof.bank_account_holder or "",
         "bankAccountNumber": prof.bank_account_number or "",
