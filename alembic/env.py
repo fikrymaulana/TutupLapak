@@ -3,16 +3,16 @@ import os
 import sys
 from logging.config import fileConfig
 from pathlib import Path
+from typing import Sequence
 
-from sqlalchemy import engine_from_config, pool
+from sqlalchemy import create_engine, pool
 from sqlalchemy.engine import Connection
 from alembic import context
 
-# optional: load .env so DATABASE_URL can come from there
 try:
-    from dotenv import load_dotenv
+    from dotenv import load_dotenv  # type: ignore
 except Exception:
-    load_dotenv = None
+    load_dotenv = None  # type: ignore
 
 # Alembic Config object, provides access to .ini
 config = context.config
@@ -21,30 +21,35 @@ config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-# ---------------------------
-# Ensure project root is on sys.path so we can import models
-# ---------------------------
+# --------------------------------------------------------------------------
+# Ensure project root & src on sys.path so we can import models
+# --------------------------------------------------------------------------
 project_root = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(project_root))
 sys.path.insert(0, str(project_root / "src"))
 
-# Load .env from project root if present (helps local dev)
 env_path = project_root / ".env"
 if load_dotenv is not None and env_path.exists():
-    # load environment variables (DATABASE_URL etc.)
     load_dotenv(dotenv_path=str(env_path), override=False)
 
 # --------------------------------------------------------------------------
-# Import SQLAlchemy Base metadata (attempt common locations)
+# Import SQLAlchemy Base metadata (try common locations)
 # --------------------------------------------------------------------------
 target_metadata = None
-_import_errors = []
-for candidate in ("src.files.models", "src.models", "models", "app.models"):
+_import_errors: list[tuple[str, str]] = []
+candidates: Sequence[str] = (
+    "src.files.models",
+    "src.models",
+    "models",
+    "app.models",
+    "src.database",
+)
+
+for candidate in candidates:
     try:
         module = __import__(candidate, fromlist=["Base"])
         Base = getattr(module, "Base", None)
         if Base is not None:
-            # Alembic will use this metadata for autogenerate
             target_metadata = Base.metadata
             break
     except Exception as e:
@@ -52,37 +57,32 @@ for candidate in ("src.files.models", "src.models", "models", "app.models"):
         continue
 
 if target_metadata is None:
-    # helpful warning — autogenerate will not work until metadata is found
     sys.stderr.write(
         "WARNING: Alembic could not import target metadata (Base) from candidates.\n"
         "Tried: {}\n".format(", ".join([c for c, _ in _import_errors]))
-        + "If your models are located elsewhere, edit migrations/env.py to point to them.\n"
+        + "If your models live in a different module, update migrations/env.py.\n"
     )
 
 # --------------------------------------------------------------------------
 # Prefer DATABASE_URL from environment (.env). This overrides alembic.ini.
 # --------------------------------------------------------------------------
-db_url = os.environ.get("DATABASE_URL")
-if db_url:
-    config.set_main_option("sqlalchemy.url", db_url)
+DATABASE_URL = os.environ.get("DATABASE_URL")
+if DATABASE_URL:
+    config.set_main_option("sqlalchemy.url", DATABASE_URL)
 
-# ensure we have a URL to work with
+# final check for a URL
 url = config.get_main_option("sqlalchemy.url")
 if not url:
     raise RuntimeError("sqlalchemy.url is not set in alembic.ini or DATABASE_URL")
 
 
 # --------------------------------------------------------------------------
-# Offline migrations (emit SQL without DB connection)
+# Offline migrations
 # --------------------------------------------------------------------------
 def run_migrations_offline() -> None:
     """
-    Run migrations in 'offline' mode.
-    Generates SQL script without connecting to the database.
+    Run migrations in 'offline' mode (emit SQL scripts).
     """
-    url = config.get_main_option("sqlalchemy.url")
-    if not url:
-        raise RuntimeError("DATABASE_URL not set for offline migrations")
     context.configure(
         url=url,
         target_metadata=target_metadata,
@@ -95,12 +95,9 @@ def run_migrations_offline() -> None:
 
 
 # --------------------------------------------------------------------------
-# Online migrations (connect to the DB synchronously)
+# Online migrations (synchronous)
 # --------------------------------------------------------------------------
 def _run_migrations(connection: Connection) -> None:
-    """
-    Configure the migration context using a live Connection and run migrations.
-    """
     context.configure(connection=connection, target_metadata=target_metadata)
     with context.begin_transaction():
         context.run_migrations()
@@ -108,16 +105,14 @@ def _run_migrations(connection: Connection) -> None:
 
 def run_migrations_online() -> None:
     """
-    Run migrations in 'online' mode using a synchronous Engine created
-    by engine_from_config(). This is the classic Alembic synchronous path.
+    Run migrations in 'online' mode using a synchronous Engine.
     """
-    connectable = engine_from_config(
-        config.get_section(config.config_ini_section, {}),
-        prefix="sqlalchemy.",
+    connectable = create_engine(
+        url,  # type: ignore
         poolclass=pool.NullPool,
+        pool_pre_ping=True,
     )
 
-    # connectable is a synchronous Engine; use normal connection context
     with connectable.connect() as connection:
         _run_migrations(connection)
 

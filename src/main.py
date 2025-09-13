@@ -1,15 +1,19 @@
+# src/main.py
 from fastapi import FastAPI
-from .files.router import router as files_router
+from src.files.router import router as files_router
+from src.auth.router import router as auth_router  # has prefix="/v1"
+from src.users.router import router as users_router  # has prefix="/v1"
 
-app = FastAPI(title="TutupLapak", version="1.0.0")
+app = FastAPI(
+    title="TutupLapak API",
+    version="1.0.0",
+    description="TutupLapak API - Authentication, Users, Files service",
+)
 
-# TODO: Add feature routers here
-# from .auth.router import auth_router
-# from .users.router import users_router
 
-# app.include_router(auth_router, prefix="/auth", tags=["Authentication"])
-# app.include_router(users_router, prefix="/users", tags=["Users"])
-app.include_router(files_router, tags=["Files"])
+app.include_router(files_router)
+app.include_router(auth_router)  # no extra prefix here
+app.include_router(users_router)  # no extra prefix here
 
 
 @app.get("/")

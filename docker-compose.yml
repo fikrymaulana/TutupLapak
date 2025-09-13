@@ -1,11 +1,35 @@
 version: '3.8'
 
 services:
+  db:
+    image: postgres:16
+    env_file:
+      - ./.env
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-tutuplapak_db}"]
+      interval: 5s
+      timeout: 3s
+      retries: 15
+    # Optional: expose DB if you want external clients
+    # ports:
+    #   - "5432:5432"
+
   app:
     build: .
+    env_file:
+      - ./.env
+    depends_on:
+      db:
+        condition: service_healthy
     ports:
       - "8000:8000"
-    environment:
-      - DATABASE_URL=${DATABASE_URL}
     volumes:
-      - .:/app
+      - ./src:/app/src
+      - ./alembic:/app/alembic
+    # Only include this if your Dockerfile doesn't already run uvicorn
+    # command: uvicorn src.main:app --host 0.0.0.0 --port 8000
+
+volumes:
+  pgdata:

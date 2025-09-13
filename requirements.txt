@@ -11,3 +11,6 @@ minio
 python-dotenv
 pillow
 cuid2
+pydantic-settings
+PyJWT
+pydantic[email]
