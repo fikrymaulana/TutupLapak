@@ -6,7 +6,7 @@ from src.database import get_db
 from . import schemas, service
 
 # Prefix hanya domain, tanpa versi
-router = APIRouter(prefix="/auth", tags=["Authentication"])
+router = APIRouter(prefix="/v1", tags=["Authentication"])
 
 @router.post("/register/email", response_model=schemas.TokenResponse, status_code=status.HTTP_201_CREATED)
 def register_by_email(user_data: schemas.UserCreate, db: Session = Depends(get_db)):
