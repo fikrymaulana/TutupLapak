@@ -15,12 +15,27 @@ def get_user_by_email(db: Session, email: str):
 def get_user_by_phone(db: Session, phone: str):
     return db.query(models.User).filter(models.User.phone == phone).first()
 
-def create_access_token(data: dict):
+def create_access_token(data: dict, user: models.User = None):
     to_encode = data.copy()
-    expire = datetime.now(timezone.utc) + timedelta(
-        minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES
-    )
-    to_encode.update({"exp": expire})
+    now = datetime.now(timezone.utc)
+    expire = now + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+
+    # Add standard JWT claims for Go compatibility
+    to_encode.update({
+        "iss": settings.JWT_ISSUER,
+        "aud": settings.JWT_AUDIENCE,
+        "iat": now,
+        "exp": expire,
+        "sub": data.get("sub", ""),
+    })
+
+    # Add user information if available
+    if user:
+        to_encode.update({
+            "email": user.email,
+            "phone": user.phone,
+        })
+
     encoded_jwt = jwt.encode(
         to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM
     )

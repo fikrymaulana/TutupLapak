@@ -18,7 +18,7 @@ def register_by_email(user_data: schemas.UserCreate, db: Session = Depends(get_d
     except IntegrityError:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Email is exist")
 
-    token = service.create_access_token(data={"sub": str(new_user.id)})
+    token = service.create_access_token(data={"sub": str(new_user.id)}, user=new_user)
     return {"email": new_user.email or "", "phone": new_user.phone or "", "token": token}
 
 @router.post("/register/phone", response_model=schemas.TokenResponse, status_code=status.HTTP_201_CREATED)
@@ -31,7 +31,7 @@ def register_by_phone(user_data: schemas.UserCreatePhone, db: Session = Depends(
     except IntegrityError:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="phone is exist")
 
-    token = service.create_access_token(data={"sub": str(new_user.id)})
+    token = service.create_access_token(data={"sub": str(new_user.id)}, user=new_user)
     return {"email": new_user.email or "", "phone": new_user.phone or "", "token": token}
 
 @router.post("/login/email", response_model=schemas.TokenResponse)
@@ -43,7 +43,7 @@ def login_by_email(user_data: schemas.UserLogin, db: Session = Depends(get_db)):
             detail="Incorrect email or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    token = service.create_access_token(data={"sub": str(user.id)})
+    token = service.create_access_token(data={"sub": str(user.id)}, user=user)
     return {"email": user.email or "", "phone": user.phone or "", "token": token}
 
 @router.post("/login/phone", response_model=schemas.TokenResponse)
@@ -54,7 +54,5 @@ def login_by_phone(user_data: schemas.UserLoginPhone, db: Session = Depends(get_
             status_code=status.HTTP_404_NOT_FOUND,
             detail="phone is not found or password incorrect",
         )
-    token = service.create_access_token(data={"sub": str(user.id)})
+    token = service.create_access_token(data={"sub": str(user.id)}, user=user)
     return {"email": user.email or "", "phone": user.phone or "", "token": token}
-
-    
