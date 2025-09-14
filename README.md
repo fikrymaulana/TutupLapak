@@ -2,6 +2,8 @@
 
 A backend API project for Project Sprint's Marketplace Task.
 
+For detailed running instructions, see [HOW_TO_RUN.md](HOW_TO_RUN.md).
+
 ## Project Structure
 We use the best practise project structure mentioned in the [fastapi-best-practices](https://github.com/zhanymkanov/fastapi-best-practices)
 
