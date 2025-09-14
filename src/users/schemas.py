@@ -1,5 +1,11 @@
+
+# src/users/service.py
 from pydantic import BaseModel, Field
 from typing import Optional
+
+from src.files.models import FileObject
+
+
 
 class UpdateProfileRequest(BaseModel):
     fileId: Optional[str] = Field(default=None)
@@ -25,3 +31,6 @@ class UserProfileResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+
