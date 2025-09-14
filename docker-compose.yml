@@ -1,35 +1,109 @@
 version: '3.8'
 
 services:
-  db:
-    image: postgres:16
-    env_file:
-      - ./.env
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-tutuplapak_db}"]
-      interval: 5s
-      timeout: 3s
-      retries: 15
-    # Optional: expose DB if you want external clients
-    # ports:
-    #   - "5432:5432"
-
-  app:
+  auth-service:
     build: .
-    env_file:
-      - ./.env
-    depends_on:
-      db:
-        condition: service_healthy
     ports:
       - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://tutuplapak_user:tutuplapak_password@db:5432/tutuplapak_db
+      - MINIO_ENDPOINT=minio:9000
+      - MINIO_ACCESS_KEY=minioadmin
+      - MINIO_SECRET_KEY=minioadmin
+      - APP_NAME=${APP_NAME}
+      - DEBUG=${DEBUG}
+      - SECRET_KEY=9bcb93b71741025acbaf7341dc6cf6ecf2ee5e87324811601ea77217dbd165c9
+    depends_on:
+      - db
+      - minio
     volumes:
-      - ./src:/app/src
-      - ./alembic:/app/alembic
-    # Only include this if your Dockerfile doesn't already run uvicorn
-    # command: uvicorn src.main:app --host 0.0.0.0 --port 8000
+      - .:/app
+    networks:
+      - app-network
+
+  product-service:
+    build: ../tutuplapak-product-purchase-api/.
+    stdin_open: true
+    tty: true
+    container_name: product-service
+    restart: always
+    environment:
+      TZ: "Asia/Jakarta"
+      # Application Configuration
+      APP_NAME: "service-product-purchase"
+      APP_VERSION: "0.0.1"
+      ENVIRONMENT: "development"
+      # HTTP Server
+      HTTP_HOST: "0.0.0.0"
+      HTTP_PORT: "8001"
+      # Database
+      POSTGRESQL_URL: "postgresql://tutuplapak_user:tutuplapak_password@db:5432/tutuplapak_db?sslmode=disable"
+      CIPHER_POSTGRESQL: "tutuplapak_password"
+      # Logging
+      LOG_LEVEL: "debug"
+      # JWT Configuration
+      JWT_SECRET: "9bcb93b71741025acbaf7341dc6cf6ecf2ee5e87324811601ea77217dbd165c9"
+    ports:
+      - 8001:8001
+    depends_on:
+      - db
+      - minio
+    volumes:
+      - ../tutuplapak-product-purchase-api/log/service.log:/app/cmd/log/service.log
+      - ../tutuplapak-product-purchase-api/config/config.yml:/app/cmd/config/config.yml
+    networks:
+      - app-network
+  db:
+    image: postgres:15.4
+    environment:
+      - POSTGRES_DB=tutuplapak_db
+      - POSTGRES_USER=tutuplapak_user
+      - POSTGRES_PASSWORD=tutuplapak_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - app-network
+
+  minio:
+    image: minio/minio
+    command: server /data --console-address ":9001"
+    environment:
+      - MINIO_ACCESS_KEY=minioadmin
+      - MINIO_SECRET_KEY=minioadmin
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio_data:/data
+    networks:
+      - app-network
+
+  adminer:
+    image: adminer:4.17.1
+    ports:
+      - "8888:8080"
+    depends_on:
+      - db
+    networks:
+      - app-network
+
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+    depends_on:
+      - auth-service
+      - product-service
+    networks:
+      - app-network
 
 volumes:
-  pgdata:
+  postgres_data:
+  minio_data:
+
+networks:
+  app-network:
