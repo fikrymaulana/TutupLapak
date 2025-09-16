@@ -58,19 +58,50 @@ def register_by_email(payload: dict = Body(..., example={"email": "user@example.
 
     return {"email": new_user.email or "", "phone": new_user.phone or "", "token": token}
 
+PHONE_RE = re.compile(r"^\+[1-9]\d{1,14}$")
+
+def _bad_request():
+    raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Bad Request")
+
 @router.post("/register/phone", response_model=schemas.TokenResponse, status_code=status.HTTP_201_CREATED)
-def register_by_phone(user_data: schemas.UserCreatePhone, db: Session = Depends(get_db)):
-    if service.get_user_by_phone(db, phone=user_data.phone):
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="phone is exist")
-
+async def register_by_phone(request: Request, db: Session = Depends(get_db)):
+    # --- VALIDASI MANUAL: pastikan 400, bukan 422 ---
     try:
-        new_user = service.create_user(db=db, user_data=user_data)
+        body = await request.json()
+    except Exception:
+        _bad_request()
+    if not isinstance(body, dict):
+        _bad_request()
+
+    phone = body.get("phone")
+    password = body.get("password")
+
+    # wajib ada & harus string
+    if phone is None or password is None:
+        _bad_request()
+    if not isinstance(phone, str) or not isinstance(password, str):
+        _bad_request()
+
+    phone = phone.strip()
+    if not PHONE_RE.match(phone):               # E.164
+        _bad_request()
+    if not (8 <= len(password) <= 32):          # panjang 8..32 → selain itu 400
+        _bad_request()
+
+    # konflik (409) → wording HARUS persis
+    if service.get_user_by_phone(db, phone=phone):
+        raise HTTPException(status_code=409, detail="phone is exist")
+
+    # create user + token
+    try:
+        new_user = service.create_user(db=db, user_data=schemas.UserCreatePhone(phone=phone, password=password))
+        token = service.create_access_token(data={"sub": str(new_user.id)}, user=new_user)
     except IntegrityError:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="phone is exist")
+        raise HTTPException(status_code=409, detail="phone is exist")
+    except Exception:
+        raise HTTPException(status_code=500, detail="Internal Server Error")
 
-    token = service.create_access_token(data={"sub": str(new_user.id)}, user=new_user)
     return {"email": new_user.email or "", "phone": new_user.phone or "", "token": token}
-
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")  # simple enough for test
 
 def _bad_request():
@@ -144,7 +175,17 @@ async def login_by_email(request: Request, db: Session = Depends(get_db)):
 
 # --- OPTIONAL: LOGIN (phone) kalau mau diseragamkan 400 utk payload jelek ----
 @router.post("/login/phone", response_model=schemas.TokenResponse)
-async def login_by_phone(request: Request, db: Session = Depends(get_db)):
+async def login_by_phone(
+    request: Request, 
+    db: Session = Depends(get_db), 
+    payload_example: dict = Body(
+        ...,
+        example={
+            "phone": "+6281234567890",
+            "password": "Secretp4ss"
+        },
+        description="Payload untuk login menggunakan phone & password"
+    )):
     try:
         body = await request.json()
     except Exception:

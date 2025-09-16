@@ -100,14 +100,14 @@ def update_profile(
 
 
 
+# ganti/overwrite fungsi link_phone lama dengan ini
+
 def link_phone(user: auth_models.User, phone: str, db: Session):
     existing = db.query(auth_models.User).filter(auth_models.User.phone == phone).first()
     if existing and existing.id != user.id:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="phone is taken")
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="phone is exist")
     user.phone = phone
-    db.add(user)
-    db.commit()
-    db.refresh(user)
+    db.add(user); db.commit(); db.refresh(user)
     return user
 
 
@@ -115,11 +115,9 @@ def link_phone(user: auth_models.User, phone: str, db: Session):
 def link_email(user: auth_models.User, email: str, db: Session):
     existing = db.query(auth_models.User).filter(auth_models.User.email == email).first()
     if existing and existing.id != user.id:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="email is taken")
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="email is exist")
     user.email = email
-    db.add(user)
-    db.commit()
-    db.refresh(user)
+    db.add(user); db.commit(); db.refresh(user)
     return user
 
 
@@ -142,3 +140,9 @@ def set_profile_file_id(
     db.add(prof)
     return prof
 
+def get_user_by_phone(db: Session, phone: str) -> Optional[auth_models.User]:
+    return db.query(auth_models.User).filter(auth_models.User.phone == phone).first()
+
+
+def get_user_by_email(db: Session, email: str) -> Optional[auth_models.User]:
+    return db.query(auth_models.User).filter(auth_models.User.email == email).first()
